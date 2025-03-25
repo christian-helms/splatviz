@@ -29,6 +29,7 @@ from widgets import (
     latent_widget,
     render_widget,
     training_widget,
+    pose_estimation_training_data_widget,
 )
 
 
@@ -52,6 +53,10 @@ class Splatviz(imgui_window.ImguiWindow):
         # Internals.
         self._last_error_print = None
 
+        # Widget interface.
+        self.args = EasyDict()
+        self.result = EasyDict()
+
         self.widgets = []
         update_all_the_time = False
         if mode == "default":
@@ -64,6 +69,7 @@ class Splatviz(imgui_window.ImguiWindow):
                 render_widget.RenderWidget(self),
                 edit_widget.EditWidget(self),
                 eval_widget.EvalWidget(self),
+                pose_estimation_training_data_widget.PoseEstimationTrainingDataWidget(self),
             ]
             renderer = GaussianRenderer()
         elif mode == "decoder":
@@ -101,10 +107,7 @@ class Splatviz(imgui_window.ImguiWindow):
         self._tex_img = None
         self._tex_obj = None
         self.eval_result = ""
-
-        # Widget interface.
-        self.args = EasyDict()
-        self.result = EasyDict()
+        self.args.pose_estimation_training_data_widget_expanded = False
 
         # Initialize window.
         self.set_position(0, 0)
@@ -148,10 +151,18 @@ class Splatviz(imgui_window.ImguiWindow):
 
         # Widgets
         for widget in self.widgets:
-            expanded, _visible = imgui_utils.collapsing_header(widget.name, default=widget.name == "Load")
-            imgui.indent()
-            widget(expanded)
-            imgui.unindent()
+            if widget.name == "Pose Estimation Stereo Training Data":
+                if len(self.args.ply_file_paths) == 2:
+                    expanded, _visible = imgui_utils.collapsing_header(widget.name)
+                    self.args.pose_estimation_training_data_widget_expanded = expanded
+                    imgui.indent()
+                    widget(expanded)
+                    imgui.unindent()
+            else:
+                expanded, _visible = imgui_utils.collapsing_header(widget.name, default=widget.name == "Load")
+                imgui.indent()
+                widget(expanded)
+                imgui.unindent()
 
         # imgui.show_style_editor()
 

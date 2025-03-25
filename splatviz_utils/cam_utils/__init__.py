@@ -109,3 +109,15 @@ def fov_to_intrinsics(fov_degrees, imsize=1, device="cpu"):
     focal_length = float(imsize / (2 * math.tan(fov_rad / 2)))
     intrinsics = torch.tensor([[focal_length, 0, 0.5], [0, focal_length, 0.5], [0, 0, 1.0]], device=device)
     return intrinsics
+
+def shift_camera_by_baseline(camera_params, baseline_mm, model_unit_mm):
+    baseline_in_model_space = baseline_mm / model_unit_mm
+    rotation = camera_params[:3, :3]
+    look_at_vector = rotation @ torch.tensor([0, 0, -1], dtype=torch.float32, device="cuda:0")
+    look_at_unit_vector = look_at_vector / torch.norm(look_at_vector)
+    up_vector = rotation @ torch.tensor([0, 1, 0], dtype=torch.float32, device="cuda:0")
+    up_unit_vector = up_vector / torch.norm(up_vector)
+    baseline_vector = torch.linalg.cross(look_at_unit_vector, up_unit_vector)
+    baseline_unit_vector = baseline_vector / torch.norm(baseline_vector)
+    camera_params[:3, 3] += baseline_in_model_space * baseline_unit_vector
+    return camera_params
